@@ -1,8 +1,18 @@
-use axum::{extract::State, http::StatusCode, response::IntoResponse, routing::get, Json, Router};
+use axum::{
+    extract::{rejection::JsonRejection, State},
+    http::StatusCode,
+    response::IntoResponse,
+    routing::get,
+    Json, Router,
+};
 use axum_extra::extract::WithRejection;
 use serde::Deserialize;
+use serde_json::Value;
 
-use crate::{app_state::AppState, diag};
+use crate::{
+    app_state::AppState,
+    diag::{self, AppError},
+};
 
 async fn hello_axum() -> &'static str {
     //tracing::debug!("hello_axum");
@@ -16,19 +26,28 @@ async fn get_state(State(state): State<AppState>) -> String {
 
 #[derive(Deserialize, Debug)]
 pub struct StateInput {
-    data: String
+    data: String,
 }
 
 async fn post_state(
     State(state): State<AppState>,
-    //Json(payload): Json<StateInput>
-    WithRejection(Json(payload), _) : WithRejection<Json<StateInput>, diag::AppError>
+    // 1 Json(payload): Json<StateInput> or Json(payload) : Json<Value>
+    // 2 WithRejection(Json(payload), _) : WithRejection<Json<StateInput>, diag::AppError>
+    // 3 payload: Result<Json<StateInput>, JsonRejection>,
+    Json(payload) : Json<Value>
 ) -> impl IntoResponse {
-    //tracing::debug!("{:?}", payload);
-    tracing::debug!("post_state");
-    let mut data = state.data.lock().unwrap();
-    *data = payload.data;
-    StatusCode::ACCEPTED
+    if let Some(data) = payload.get("data") {
+        print!("{}", data);
+    }
+    
+    // match payload {
+    //     Ok(payload) => {
+    //         let mut data = state.data.lock().unwrap();
+    //         *data = payload.0.data;
+    //         StatusCode::ACCEPTED.into_response()
+    //     }
+    //     Err(err) => AppError::JsonRejection(err).into_response(),
+    // }
 }
 
 pub(crate) fn router() -> Router<AppState> {

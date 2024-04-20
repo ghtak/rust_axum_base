@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use app_state::AppState;
 use config::Config;
 use tokio::net::TcpListener;
