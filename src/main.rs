@@ -6,6 +6,7 @@ mod app_state;
 mod config;
 mod diag;
 mod route;
+mod tests;
 
 #[tokio::main]
 async fn main() {
