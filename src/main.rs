@@ -12,7 +12,6 @@ mod tests;
 async fn main() {
     let config = Config::new("./app_config.toml").unwrap();
     let _guard = config.tracing.init().unwrap();
-
     let app_state = AppState::new();
 
     let listener = TcpListener::bind(config.http.socketaddr().unwrap())
