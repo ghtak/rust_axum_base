@@ -7,6 +7,8 @@ use crate::{depends::Depends, diag::{self, AppError}};
 
 use super::{extract::session_from_parts, StoreImpl};
 
+pub const USERKEY : &'static str = "user";
+
 #[derive(Serialize, Deserialize)]
 pub struct User {
     pub id: i64,
@@ -35,7 +37,7 @@ where
     async fn from_request_parts(parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
         let Depends(session) = session_from_parts::<S, StoreImpl>(parts, state).await?;
         let user = session
-            .get::<User>("user")
+            .get::<User>(USERKEY)
             .ok_or(AppError::InvalidSession)?;
         Ok(Depends(user))
     }
