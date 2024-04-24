@@ -1,16 +1,26 @@
-
 use async_session::{Session, SessionStore};
-use axum::{extract::State, response::IntoResponse, routing::get, Json, Router};
+use axum::{
+    async_trait,
+    extract::{FromRef, FromRequestParts, State},
+    response::IntoResponse,
+    routing::get,
+    Json, Router,
+};
 use axum_extra::extract::{
     cookie::{Cookie, SameSite},
     CookieJar,
 };
+use http::request::Parts;
 use reqwest::StatusCode;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    app_state::AppState, depends::Depends, diag::{self, AppError}
+    app_state::AppState,
+    depends::Depends,
+    diag::{self, AppError},
 };
+
+use super::{extract::session_from_parts, StoreImpl};
 
 #[derive(Serialize, Deserialize)]
 struct User {
@@ -56,38 +66,6 @@ async fn login(
     Ok((StatusCode::OK, jar, Json(user)))
 }
 
-async fn get_user(
-    State(state): State<AppState>,
-    cookiejar: CookieJar,
-) -> diag::Result<impl IntoResponse> {
-    if let Some(cookie) = cookiejar.get("SESSIONID") {
-        let session = state
-            .session_store
-            .load_session(cookie.value().to_string())
-            .await
-            .map_err(|err| AppError::Unknown(err.to_string()))?
-            .ok_or(AppError::InvalidSession)?;
-
-        let user = session
-            .get::<User>("user")
-            .ok_or(AppError::InvalidSession)?;
-
-        Ok((StatusCode::OK, Json(user)).into_response())
-    } else {
-        Err(AppError::NoSession)
-    }
-}
-
-async fn get_user_extract(
-    Depends(session): Depends<Session>
-) -> diag::Result<impl IntoResponse> {
-    let user = session
-        .get::<User>("user")
-        .ok_or(AppError::InvalidSession)?;
-
-    Ok((StatusCode::OK, Json(user)).into_response())
-}
-
 async fn logout(
     State(state): State<AppState>,
     cookiejar: CookieJar,
@@ -114,10 +92,62 @@ async fn logout(
     }
 }
 
+async fn get_user(
+    State(state): State<AppState>,
+    cookiejar: CookieJar,
+) -> diag::Result<impl IntoResponse> {
+    if let Some(cookie) = cookiejar.get("SESSIONID") {
+        let session = state
+            .session_store
+            .load_session(cookie.value().to_string())
+            .await
+            .map_err(|err| AppError::Unknown(err.to_string()))?
+            .ok_or(AppError::InvalidSession)?;
+
+        let user = session
+            .get::<User>("user")
+            .ok_or(AppError::InvalidSession)?;
+
+        Ok((StatusCode::OK, Json(user)).into_response())
+    } else {
+        Err(AppError::NoSession)
+    }
+}
+
+async fn get_user_extract(Depends(session): Depends<Session>) -> diag::Result<impl IntoResponse> {
+    let user = session
+        .get::<User>("user")
+        .ok_or(AppError::InvalidSession)?;
+
+    Ok((StatusCode::OK, Json(user)).into_response())
+}
+
+#[async_trait]
+impl<S> FromRequestParts<S> for Depends<User>
+where
+    S: Send + Sync,
+    StoreImpl: FromRef<S> + SessionStore,
+{
+    type Rejection = diag::AppError;
+
+    async fn from_request_parts(parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
+        let Depends(session) = session_from_parts::<S, StoreImpl>(parts, state).await?;
+        let user = session
+            .get::<User>("user")
+            .ok_or(AppError::InvalidSession)?;
+        Ok(Depends(user))
+    }
+}
+
+async fn get_user_depends(Depends(user): Depends<User>) -> diag::Result<impl IntoResponse> {
+    Ok((StatusCode::OK, Json(user)).into_response())
+}
+
 pub fn session_route() -> Router<AppState> {
     Router::new()
         .route("/session/login", get(login))
         .route("/session/user", get(get_user))
         .route("/session/user_ext", get(get_user_extract))
+        .route("/session/user_dep", get(get_user_depends))
         .route("/session/logout", get(logout))
 }
