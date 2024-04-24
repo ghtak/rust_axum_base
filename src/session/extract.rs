@@ -21,10 +21,14 @@ impl FromRef<AppState> for StoreImpl {
     }
 }
 
-pub(crate) async fn session_from_parts<S: Send + Sync, StoreImpl: FromRef<S> + SessionStore>(
+pub(crate) async fn session_from_parts<S, StoreImpl>(
     parts: &mut Parts,
     state: &S,
-) -> Result<Depends<async_session::Session>, diag::AppError> {
+) -> Result<Depends<async_session::Session>, diag::AppError>
+where
+    S: Send + Sync,
+    StoreImpl: FromRef<S> + SessionStore,
+{
     let cookies = parts
         .headers
         .get_all(COOKIE)

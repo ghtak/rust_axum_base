@@ -1,5 +1,6 @@
 mod extract;
 mod route;
+mod sample_user;
 
 pub use route::session_route;
 

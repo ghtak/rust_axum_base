@@ -1,18 +1,10 @@
 use async_session::{Session, SessionStore};
-use axum::{
-    async_trait,
-    extract::{FromRef, FromRequestParts, State},
-    response::IntoResponse,
-    routing::get,
-    Json, Router,
-};
+use axum::{extract::State, response::IntoResponse, routing::get, Json, Router};
 use axum_extra::extract::{
     cookie::{Cookie, SameSite},
     CookieJar,
 };
-use http::request::Parts;
 use reqwest::StatusCode;
-use serde::{Deserialize, Serialize};
 
 use crate::{
     app_state::AppState,
@@ -20,24 +12,7 @@ use crate::{
     diag::{self, AppError},
 };
 
-use super::{extract::session_from_parts, StoreImpl};
-
-#[derive(Serialize, Deserialize)]
-struct User {
-    pub id: i64,
-    pub name: String,
-    pub email: String,
-}
-
-impl User {
-    pub fn new(id: i64, name: &'_ str) -> Self {
-        User {
-            id,
-            name: name.to_owned(),
-            email: "abd@mail.com".to_owned(),
-        }
-    }
-}
+use super::sample_user::User;
 
 async fn login(
     State(state): State<AppState>,
@@ -49,14 +24,14 @@ async fn login(
         .insert("user", &user)
         .map_err(|e| AppError::Unknown(e.to_string()))?;
 
-    let cookie = state
+    let cookie_value = state
         .session_store
         .store_session(session)
         .await
         .map_err(|e| AppError::Unknown(e.to_string()))?
         .unwrap();
 
-    let mut cookie = Cookie::new("SESSIONID", cookie);
+    let mut cookie = Cookie::new("SESSIONID", cookie_value);
 
     cookie.set_same_site(SameSite::Lax);
     cookie.set_http_only(true);
@@ -122,23 +97,6 @@ async fn get_user_extract(Depends(session): Depends<Session>) -> diag::Result<im
     Ok((StatusCode::OK, Json(user)).into_response())
 }
 
-#[async_trait]
-impl<S> FromRequestParts<S> for Depends<User>
-where
-    S: Send + Sync,
-    StoreImpl: FromRef<S> + SessionStore,
-{
-    type Rejection = diag::AppError;
-
-    async fn from_request_parts(parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
-        let Depends(session) = session_from_parts::<S, StoreImpl>(parts, state).await?;
-        let user = session
-            .get::<User>("user")
-            .ok_or(AppError::InvalidSession)?;
-        Ok(Depends(user))
-    }
-}
-
 async fn get_user_depends(Depends(user): Depends<User>) -> diag::Result<impl IntoResponse> {
     Ok((StatusCode::OK, Json(user)).into_response())
 }
@@ -147,7 +105,7 @@ pub fn session_route() -> Router<AppState> {
     Router::new()
         .route("/session/login", get(login))
         .route("/session/user", get(get_user))
-        .route("/session/user_ext", get(get_user_extract))
-        .route("/session/user_dep", get(get_user_depends))
+        .route("/session/user/ext", get(get_user_extract))
+        .route("/session/user/dep", get(get_user_depends))
         .route("/session/logout", get(logout))
 }

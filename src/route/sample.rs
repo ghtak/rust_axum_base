@@ -11,7 +11,6 @@ use axum::{
 use axum_extra::extract::WithRejection;
 use serde::Deserialize;
 use serde_json::Value;
-use uuid::Uuid;
 
 use crate::{
     app_state::AppState,
@@ -85,13 +84,13 @@ async fn post_state_json_type(
 }
 
 //https://docs.rs/axum/latest/axum/extract/index.html
-async fn path(Path(user_id): Path<i32>) {}
-async fn query(Query(params): Query<HashMap<String, String>>) {}
-async fn headers(headers: HeaderMap) {}
-async fn string(body: String) {}
-async fn bytes(body: Bytes) {}
-async fn request(request: Request) {}
-async fn extension(Extension(state): Extension<AppState>) {}
+async fn path(Path(_user_id): Path<i32>) {}
+async fn query(Query(_params): Query<HashMap<String, String>>) {}
+async fn headers(_headers: HeaderMap) {}
+async fn string(_body: String) {}
+async fn bytes(_body: Bytes) {}
+async fn request(_request: Request) {}
+async fn extension(Extension(_state): Extension<AppState>) {}
 
 #[derive(Deserialize, Debug)]
 struct Pagination {
