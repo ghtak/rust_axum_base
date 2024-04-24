@@ -67,7 +67,7 @@ async fn post_state_json_value(
         *state_data = data.as_str().unwrap().to_owned();
         StatusCode::ACCEPTED.into_response()
     } else {
-        AppError::Unknown.into_response()
+        AppError::Unknown("payload parse error".to_owned()).into_response()
     }
 }
 
@@ -80,7 +80,7 @@ async fn post_state_json_type(
         *state_data = data.as_str().unwrap().to_owned();
         StatusCode::ACCEPTED.into_response()
     } else {
-        AppError::Unknown.into_response()
+        AppError::Unknown("payload parse error".to_owned()).into_response()
     }
 }
 

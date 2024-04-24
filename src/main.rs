@@ -9,6 +9,8 @@ mod config;
 mod diag;
 mod route;
 mod tests;
+mod session;
+mod depends;
 
 #[tokio::main]
 async fn main() {

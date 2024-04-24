@@ -10,17 +10,29 @@ pub(crate) enum AppError {
     #[error(transparent)]
     JsonRejection(#[from] JsonRejection),
 
-    #[error("unknown error")]
-    Unknown,
+    #[error("unknown error {0}")]
+    Unknown(String),
+
+    #[error("no session")]
+    NoSession,
+
+    #[error("invalid session")]
+    InvalidSession,
 }
 
 impl IntoResponse for AppError {
     fn into_response(self) -> axum::response::Response {
         let resp = match self {
-            AppError::Unknown => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
+            AppError::Unknown(strerr) => {
+                (StatusCode::INTERNAL_SERVER_ERROR,
+                    Json(json!({ "message": format!("{}", strerr) }))).into_response()
+            },
             AppError::JsonRejection(err) => {
                 (StatusCode::BAD_REQUEST,
                     Json(json!({ "message": format!("{:?}", err) }))).into_response()
+            },
+            err => {
+                (StatusCode::BAD_REQUEST, err.to_string()).into_response()
             }
         };
         resp
