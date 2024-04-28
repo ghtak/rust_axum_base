@@ -1,11 +1,11 @@
-use async_session::SessionStore;
 use axum::{async_trait, extract::{FromRef, FromRequestParts}};
 use http::request::Parts;
 use serde::{Deserialize, Serialize};
 
 use crate::{depends::Depends, diag::{self, AppError}};
 
-use super::{extract::session_from_parts, StoreImpl};
+use super::ContextType;
+
 
 pub const USERKEY : &'static str = "user";
 
@@ -30,12 +30,13 @@ impl User {
 impl<S> FromRequestParts<S> for Depends<User>
 where
     S: Send + Sync,
-    StoreImpl: FromRef<S> + SessionStore,
+    ContextType: FromRef<S>,
 {
     type Rejection = diag::AppError;
 
     async fn from_request_parts(parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
-        let Depends(session) = session_from_parts::<S, StoreImpl>(parts, state).await?;
+        let context = ContextType::from_ref(state);
+        let session = context.load(&parts.headers).await?;
         let user = session
             .get::<User>(USERKEY)
             .ok_or(AppError::InvalidSession)?;

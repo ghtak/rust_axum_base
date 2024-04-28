@@ -13,7 +13,9 @@ use crate::{
     diag::{self, AppError},
 };
 
-use super::{StoreImpl, SESSIONID};
+pub(crate) type StoreImpl = MemoryStore;
+
+use super::SESSIONID;
 
 impl FromRef<AppState> for StoreImpl {
     fn from_ref(input: &AppState) -> Self {
@@ -21,7 +23,7 @@ impl FromRef<AppState> for StoreImpl {
     }
 }
 
-pub(crate) async fn session_from_parts<S, StoreImpl>(
+pub(crate) async fn session_from_cookie<S, StoreImpl>(
     parts: &mut Parts,
     state: &S,
 ) -> Result<Depends<async_session::Session>, diag::AppError>
@@ -53,15 +55,40 @@ where
     Err(AppError::NoSession)
 }
 
-#[async_trait]
-impl<S> FromRequestParts<S> for Depends<async_session::Session>
+pub(crate) async fn session_from_header<S, StoreImpl>(
+    parts: &mut Parts,
+    state: &S,
+) -> Result<Depends<async_session::Session>, diag::AppError>
 where
     S: Send + Sync,
     StoreImpl: FromRef<S> + SessionStore,
 {
-    type Rejection = diag::AppError;
+    let value = parts
+        .headers
+        .get(SESSIONID)
+        .ok_or(AppError::NoSession)?
+        .to_str()
+        .map_err(|err| AppError::Unknown(err.to_string()))?;
 
-    async fn from_request_parts(parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
-        session_from_parts::<S, StoreImpl>(parts, state).await
-    }
+    let store = StoreImpl::from_ref(state);
+    let session = store
+        .load_session(value.to_owned())
+        .await
+        .map_err(|e| AppError::Unknown(e.to_string()))?
+        .ok_or(AppError::InvalidSession)?;
+
+    Ok(Depends(session))
 }
+
+// #[async_trait]
+// impl<S> FromRequestParts<S> for Depends<async_session::Session>
+// where
+//     S: Send + Sync,
+//     StoreImpl: FromRef<S> + SessionStore,
+// {
+//     type Rejection = diag::AppError;
+
+//     async fn from_request_parts(parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
+//         session_from_cookie::<S, StoreImpl>(parts, state).await
+//     }
+// }

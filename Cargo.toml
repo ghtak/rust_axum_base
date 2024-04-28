@@ -11,6 +11,8 @@ async-session = "3.0.0"
 axum = { version = "0.7.5", features = ["multipart", "ws", "http2"] }
 axum-extra = { version = "0.9.3", features = ["cookie"] }
 cargo-watch = "8.5.2"
+chrono = "0.4.38"
+cookie = "0.18.1"
 http = "1.1.0"
 reqwest = { version = "0.12.4", features = ["json"] }
 serde = { version = "1.0.198", features = ["derive"] }
