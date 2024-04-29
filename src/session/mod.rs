@@ -1,19 +1,15 @@
 mod exchange;
-mod sample_user;
-pub mod route;
 mod extract;
+pub mod route;
+mod sample_user;
 
 use http::{HeaderMap, HeaderName};
 
-use crate::
-    diag::{self, AppError}
-;
+use crate::diag::{self, AppError};
 
 use async_session::{Session, SessionStore};
 
-use self::
-    exchange::SessionExchange
-;
+use self::exchange::SessionExchange;
 
 #[derive(Clone, Debug)]
 pub(crate) struct Context<Store, Exchange>
