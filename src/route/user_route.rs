@@ -6,7 +6,7 @@ use crate::{
     app_state::AppState,
     diag,
     entity::user::User,
-    repository::{user_repository::UserRepository, Repository},
+    repository::{user_repository::UserRepository, Repository}, usecase::{user_usecase::UserUsecase, Usecase},
 };
 
 async fn create_user(
@@ -27,8 +27,16 @@ async fn get_users(
     Ok(Json(users))
 }
 
+async fn get_users_usecase(
+    Usecase(user_usecase): Usecase<UserUsecase>,
+) -> diag::Result<Json<Vec<User>>> {
+    let users = user_usecase.get_users().await?;
+    Ok(Json(users))
+}
+
 pub(crate) fn user_route() -> Router<AppState> {
     Router::new()
         .route("/user/create", get(create_user))
         .route("/user/list", get(get_users))
+        .route("/user/list_u", get(get_users_usecase))
 }

@@ -14,6 +14,7 @@ mod tests;
 mod database;
 mod entity;
 mod repository;
+mod usecase;
 
 #[tokio::main]
 async fn main() -> diag::Result<()> {
