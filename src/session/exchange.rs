@@ -81,7 +81,7 @@ impl SessionExchange for HeaderExchange {
         session_key: &'_ str,
     ) -> diag::Result<[(HeaderName, String); 1]> {
         let header = HeaderName::from_str(sessionid)
-            .map_err(|_e| AppError::Unknown("Invalid Header Key".to_owned()))?;
+            .map_err(|e| AppError::Unknown(format!("invalid header name {}", e.to_string())))?;
         Ok([(header, session_key.to_string())])
     }
 
