@@ -1,15 +1,9 @@
 use axum::extract::FromRef;
-use serde::{Deserialize, Serialize};
 
 use crate::app_state::AppState;
+use crate::entity::user::User;
 use crate::{database, diag};
 
-#[derive(Debug, Serialize, Deserialize, sqlx::FromRow)]
-pub struct User {
-    pub id: i32,
-    pub name: String,
-    pub email: String,
-}
 
 pub struct UserRepository {
     db_pool: database::PoolType,

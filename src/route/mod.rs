@@ -2,15 +2,18 @@ use axum::Router;
 use tower::ServiceBuilder;
 use tower_http::{cors::CorsLayer, trace::TraceLayer};
 
-use crate::{app_state::AppState, database, session::route::context_route};
+use crate::{app_state::AppState, session::route::context_route};
+
+use self::user_route::user_route;
 
 mod sample;
+mod user_route;
 
 pub(crate) fn init(app_state: AppState) -> anyhow::Result<Router> {
     let route = Router::new()
         .merge(sample::router())
         .merge(context_route())
-        .merge(database::route::user_route())
+        .merge(user_route())
         .layer(
             ServiceBuilder::new()
                 .layer(TraceLayer::new_for_http())

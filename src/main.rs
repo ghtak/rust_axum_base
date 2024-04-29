@@ -10,8 +10,10 @@ mod depends;
 mod diag;
 mod route;
 mod session;
-mod database;
 mod tests;
+mod database;
+mod entity;
+mod repository;
 
 #[tokio::main]
 async fn main() -> diag::Result<()> {
