@@ -9,6 +9,8 @@ use tracing_appender::{
 };
 use tracing_subscriber::{fmt::writer::MakeWriterExt, layer::SubscriberExt, Layer};
 
+use crate::{database::{PoolOptionsType, PoolType}, diag::{self, AppError}};
+
 #[derive(Deserialize, Debug)]
 pub(crate) struct Config {
     pub(crate) http: Http,
@@ -34,6 +36,13 @@ pub(crate) struct Http {
 pub(crate) struct Tracing {
     pub(crate) level: String,
     pub(crate) rolling_file: RollingFile,
+}
+
+#[derive(Deserialize, Debug)]
+pub(crate) struct RollingFile {
+    pub(crate) directory: String,
+    pub(crate) prefix: String,
+    pub(crate) rotation: String,
 }
 
 #[derive(Deserialize, Debug)]
@@ -93,9 +102,15 @@ impl Tracing {
     }
 }
 
-#[derive(Deserialize, Debug)]
-pub(crate) struct RollingFile {
-    pub(crate) directory: String,
-    pub(crate) prefix: String,
-    pub(crate) rotation: String,
+
+impl Database {
+    pub(crate) async fn create_pool(&self) -> diag::Result<PoolType> {
+        let pool = PoolOptionsType::new()
+            .max_connections(self.max_connection)
+            .connect(&self.url)
+            .await
+            .map_err(|e| AppError::Unknown(e.to_string()))?;
+        Ok(pool)
+    }
+    
 }

@@ -18,6 +18,9 @@ pub(crate) enum AppError {
 
     #[error("invalid session")]
     InvalidSession,
+
+    #[error(transparent)]
+    SqlXError(sqlx::Error),
 }
 
 impl IntoResponse for AppError {
@@ -36,5 +39,11 @@ impl IntoResponse for AppError {
             }
         };
         resp
+    }
+}
+
+impl From<sqlx::Error> for AppError {
+    fn from(value: sqlx::Error) -> Self {
+        AppError::SqlXError(value)
     }
 }
