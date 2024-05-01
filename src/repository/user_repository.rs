@@ -5,7 +5,7 @@ use crate::entity::user::User;
 use crate::{database, diag};
 
 pub struct UserRepository {
-    db_pool: database::PoolType,
+    db_pool: database::DatabasePoolType,
 }
 
 impl UserRepository {

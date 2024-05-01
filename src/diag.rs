@@ -1,4 +1,5 @@
-use axum::{extract::rejection::JsonRejection, http::StatusCode, response::IntoResponse, Json};
+use axum::{extract::rejection::{JsonRejection, PathRejection}, http::StatusCode, response::IntoResponse, Json};
+use bb8_redis::redis::RedisError;
 use serde_json::json;
 use thiserror::Error;
 
@@ -10,6 +11,9 @@ pub(crate) enum AppError {
     #[error(transparent)]
     JsonRejection(#[from] JsonRejection),
 
+    #[error(transparent)]
+    PathRejection(#[from] PathRejection),
+
     #[error("unknown error {0}")]
     Unknown(String),
 
@@ -20,10 +24,16 @@ pub(crate) enum AppError {
     InvalidSession,
 
     #[error(transparent)]
-    SqlXError(sqlx::Error),
+    SqlXError(#[from] sqlx::Error),
 
     #[error("row not found")]
-    RowNotFound
+    RowNotFound,
+
+    #[error(transparent)]
+    RedisError(#[from] RedisError),
+
+    #[error("bb8 error {0}")]
+    BB8Error(String)
 }
 
 impl IntoResponse for AppError {
@@ -45,11 +55,17 @@ impl IntoResponse for AppError {
     }
 }
 
-impl From<sqlx::Error> for AppError {
-    fn from(value: sqlx::Error) -> Self {
-        match value {
-            sqlx::Error::RowNotFound => AppError::RowNotFound,
-            _ => AppError::SqlXError(value)
-        }
-    }
-}
+// impl From<sqlx::Error> for AppError {
+//     fn from(value: sqlx::Error) -> Self {
+//         match value {
+//             sqlx::Error::RowNotFound => AppError::RowNotFound,
+//             _ => AppError::SqlXError(value)
+//         }
+//     }
+// }
+
+// impl From<RedisError> for AppError{
+//     fn from(value: RedisError) -> Self {
+//         AppError::RedisError(value)
+//     }
+// }

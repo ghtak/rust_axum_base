@@ -13,3 +13,6 @@ rotation = "DAILY"
 [database]
 url = "postgres://postgres:postgres@localhost:5432/test"
 max_connection = 10
+
+[redis]
+url = "redis://localhost"

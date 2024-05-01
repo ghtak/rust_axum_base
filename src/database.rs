@@ -1,4 +1,4 @@
 use sqlx::{postgres::PgPoolOptions, PgPool};
 
-pub(crate) type PoolType = PgPool;
-pub(crate) type PoolOptionsType = PgPoolOptions;
+pub(crate) type DatabasePoolType = PgPool;
+pub(crate) type DatabasePoolOptionsType = PgPoolOptions;

@@ -1,6 +1,7 @@
 use std::fs;
 use std::net::SocketAddr;
 
+use bb8_redis::{bb8, RedisConnectionManager};
 use serde::Deserialize;
 use tracing::Level;
 use tracing_appender::{
@@ -9,13 +10,14 @@ use tracing_appender::{
 };
 use tracing_subscriber::{fmt::writer::MakeWriterExt, layer::SubscriberExt, Layer};
 
-use crate::{database::{PoolOptionsType, PoolType}, diag::{self, AppError}};
+use crate::{database::{DatabasePoolOptionsType, DatabasePoolType}, diag::{self, AppError}, redis::RedisPoolType};
 
 #[derive(Deserialize, Debug)]
 pub(crate) struct Config {
     pub(crate) http: Http,
     pub(crate) tracing: Tracing,
     pub(crate) database: Database,
+    pub(crate) redis: Redis,
 }
 
 impl Config {
@@ -50,6 +52,13 @@ pub(crate) struct Database {
     pub(crate) url: String,
     pub(crate) max_connection: u32,
 }
+
+
+#[derive(Deserialize, Debug)]
+pub(crate) struct Redis {
+    pub(crate) url: String,
+}
+
 
 impl Http {
     pub(crate) fn socketaddr(&self) -> anyhow::Result<SocketAddr> {
@@ -104,13 +113,20 @@ impl Tracing {
 
 
 impl Database {
-    pub(crate) async fn create_pool(&self) -> diag::Result<PoolType> {
-        let pool = PoolOptionsType::new()
+    pub(crate) async fn create_pool(&self) -> diag::Result<DatabasePoolType> {
+        let pool = DatabasePoolOptionsType::new()
             .max_connections(self.max_connection)
             .connect(&self.url)
             .await
             .map_err(|e| AppError::Unknown(e.to_string()))?;
         Ok(pool)
     }
-    
+}
+
+impl Redis {
+    pub(crate) async fn create_pool(&self) -> diag::Result<RedisPoolType> {
+        let manager = RedisConnectionManager::new(self.url.as_ref())?;
+        let pool = bb8::Pool::builder().build(manager).await?;
+        Ok(pool)
+    }
 }
