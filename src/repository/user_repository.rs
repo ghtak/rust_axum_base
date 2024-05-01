@@ -4,7 +4,6 @@ use crate::app_state::AppState;
 use crate::entity::user::User;
 use crate::{database, diag};
 
-
 pub struct UserRepository {
     db_pool: database::PoolType,
 }
@@ -26,6 +25,15 @@ impl UserRepository {
             .fetch_all(&self.db_pool)
             .await?;
         Ok(users)
+    }
+
+    pub(crate) async fn find_by_id(&self, id: i32) -> diag::Result<User> {
+        let user = sqlx::query_as::<_, User>(r#"select * from "user" where id = ($1) "#)
+            .bind(id)
+            .fetch_one(&self.db_pool)
+            .await?;
+        Ok(user)
+        //Err(AppError::Unknown("".to_owned()))
     }
 }
 

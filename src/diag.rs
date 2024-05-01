@@ -21,6 +21,9 @@ pub(crate) enum AppError {
 
     #[error(transparent)]
     SqlXError(sqlx::Error),
+
+    #[error("row not found")]
+    RowNotFound
 }
 
 impl IntoResponse for AppError {
@@ -44,6 +47,9 @@ impl IntoResponse for AppError {
 
 impl From<sqlx::Error> for AppError {
     fn from(value: sqlx::Error) -> Self {
-        AppError::SqlXError(value)
+        match value {
+            sqlx::Error::RowNotFound => AppError::RowNotFound,
+            _ => AppError::SqlXError(value)
+        }
     }
 }

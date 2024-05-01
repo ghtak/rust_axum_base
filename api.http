@@ -1,0 +1,8 @@
+POST http://localhost:3001/user HTTP/1.1
+Content-Type: application/json; charset=UTF-8
+
+{
+    "id": -1,
+    "name": "test_name",
+    "email": "test_email"
+}

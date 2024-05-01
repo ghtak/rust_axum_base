@@ -18,4 +18,4 @@ where
     }
 }
 
-pub mod user_usecase;
+pub mod get_user_usecase;
