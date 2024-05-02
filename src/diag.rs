@@ -30,7 +30,7 @@ pub(crate) enum AppError {
     RowNotFound,
 
     #[error(transparent)]
-    RedisError(#[from] RedisError),
+    BB8RedisError(#[from] RedisError),
 
     #[error("bb8 error {0}")]
     BB8Error(String)
